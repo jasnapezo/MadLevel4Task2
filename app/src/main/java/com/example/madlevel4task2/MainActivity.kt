@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
 
         if (id == R.id.action_history) {
             findNavController(R.id.nav_host_fragment).navigate(
-                    R.id.action_mainGameFragment_to_historyFragment
+                R.id.action_startGameFragment_to_historyFragment
             )
 
             return true

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import androidx.navigation.fragment.findNavController
+import kotlinx.android.synthetic.main.fragment_start.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,67 +36,69 @@ class StartFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_main_game, container, false)
+        return inflater.inflate(R.layout.fragment_start, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        gameUnitRepository = GameUnitRepository(requireContext())
+        gameRepository = GameRepository(requireContext())
 
         initViews()
     }
 
     private fun initViews() {
+        // statistics
+        setStatistics()
+
         // click events
-        imgBtn_rock.setOnClickListener { playGame(ROCK) }
-        imgBtn_paper.setOnClickListener { playGame(PAPER) }
-        imgBtn_scissors.setOnClickListener { playGame(SCISSOR) }
+        imageButton_rock.setOnClickListener { playGame(Choice.ROCK) }
+        imageButton_paper.setOnClickListener { playGame(Choice.PAPER) }
+        imageButton_scissors.setOnClickListener { playGame(Choice.SCISSOR) }
 
         getLastPlayedGame()
     }
 
     private fun getLastPlayedGame() {
         mainScope.launch {
-            val lastGameUnit = withContext(Dispatchers.IO) {
-                val allGameUnits = gameUnitRepository.getAllGameUnits()
+            val lastGame = withContext(Dispatchers.IO) {
+                val allGame = gameRepository.getAllGames()
 
-                if (allGameUnits.isEmpty()) null
-                else gameUnitRepository.getAllGameUnits().last()
+                if (allGame.isEmpty()) null
+                else gameRepository.getAllGames().last()
             }
 
-            if (lastGameUnit != null) {
-                txtResult.text = getResultString(lastGameUnit.result)
-                imgResultPlayer.setBackgroundResource(imageId[lastGameUnit.playerChoice.ordinal])
-                imgResultComputer.setBackgroundResource(imageId[lastGameUnit.computerChoice.ordinal])
+            if (lastGame != null) {
+                textResult.text = getResultString(lastGame.result)
+                imageResultPlayer.setBackgroundResource(imageId[lastGame.playerChoice.ordinal])
+                imageResultComputer.setBackgroundResource(imageId[lastGame.computerChoice.ordinal])
             }
         }
     }
 
     private fun playGame(choice: Choice) {
-        // randomly choose for computer 0, 1 or 2 and convert into Choice
         val computerChoice = enumValues<Choice>()[Random.nextInt(0, 3)]
 
-        // check who wins
         val result = getGameResult(computerChoice, choice)
 
-        // modify UI
-        txtResult.text = getResultString(result)
-        imgResultPlayer.setBackgroundResource(imageId[choice.ordinal])
-        imgResultComputer.setBackgroundResource(imageId[computerChoice.ordinal])
+        textResult.text = getResultString(result)
+        imageResultPlayer.setBackgroundResource(imageId[choice.ordinal])
+        imageResultComputer.setBackgroundResource(imageId[computerChoice.ordinal])
 
-        // add to database
         mainScope.launch {
             withContext(Dispatchers.IO) {
-                gameUnitRepository.insertGameUnit(GameUnit(result, Date(), choice, computerChoice))
+                gameRepository.insertGame(Game(result, Date(), choice, computerChoice))
             }
         }
+
+        setStatistics()
+
     }
 
     private fun getGameResult(computerChoice: Choice, choice: Choice): String {
         return if (computerChoice == choice)
             DRAW
-        else if (computerChoice == ROCK && choice == SCISSOR || computerChoice == SCISSOR && choice == PAPER || computerChoice == PAPER && choice == ROCK)
+        else if (computerChoice == Choice.ROCK && choice == Choice.SCISSOR || computerChoice == Choice.SCISSOR && choice == Choice.PAPER || computerChoice == Choice.PAPER && choice == Choice.ROCK)
             LOSE
         else
             WIN
@@ -108,3 +111,13 @@ class StartFragment : Fragment() {
             else -> getString(R.string.draw)
         }
     }
+
+    private fun setStatistics() {
+        mainScope.launch {
+            val statistics = withContext(Dispatchers.IO) {
+                getString(R.string.win_draw_lose, gameRepository.getWins(), gameRepository.getDraws(), gameRepository.getLoses())
+            }
+            TextViewStatisticsResult.text = statistics
+        }
+    }
+}

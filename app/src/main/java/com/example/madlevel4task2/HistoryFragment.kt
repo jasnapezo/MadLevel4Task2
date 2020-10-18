@@ -8,6 +8,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.android.synthetic.main.fragment_history.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,18 +42,22 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        gameUnitRepository = GameUnitRepository(requireContext())
+        gameRepository = GameRepository(requireContext())
 
-        initRv()
+        initRecyclerView()
 
-        getShoppingListFromDatabase()
+        getGameFromDatabase()
     }
 
-    private fun initRv() {
-        // Initialize the recycler view with a linear layout manager, adapter
-        rvGames.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
-        rvGames.adapter = gameUnitAdapter
-        rvGames.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
+    private fun initRecyclerView() {
+        recyclerView.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+        recyclerView.adapter = gameAdapter
+        recyclerView.addItemDecoration(
+            DividerItemDecoration(
+                context,
+                DividerItemDecoration.VERTICAL
+            )
+        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -75,26 +80,26 @@ class HistoryFragment : Fragment() {
         }
     }
 
-    private fun getShoppingListFromDatabase() {
+    private fun getGameFromDatabase() {
         mainScope.launch {
-            var gameUnits = withContext(Dispatchers.IO) {
-                ArrayList(gameUnitRepository.getAllGameUnits())
+            var game = withContext(Dispatchers.IO) {
+                ArrayList(gameRepository.getAllGames())
             }
 
-            this@HistoryFragment.gameUnits.clear()
-            this@HistoryFragment.gameUnits.addAll(gameUnits)
+            this@HistoryFragment.game.clear()
+            this@HistoryFragment.game.addAll(game)
 
-            gameUnitAdapter.notifyDataSetChanged()
+            gameAdapter.notifyDataSetChanged()
         }
     }
 
     private fun clearResultsHistory() {
         mainScope.launch {
             withContext(Dispatchers.IO) {
-                gameUnitRepository.deleteAllGameUnits()
+                gameRepository.deleteAllGames()
             }
 
-            getShoppingListFromDatabase()
+            getGameFromDatabase()
         }
     }
 }
